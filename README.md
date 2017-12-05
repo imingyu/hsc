@@ -1,0 +1,2 @@
+# hsc
+Object schema validation
