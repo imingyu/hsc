@@ -8,6 +8,7 @@ export default class MAny {
         };
         this.spec = {
             type: 'any',
+            label: '',
             async: false,// 是否是异步方式验证
             rules: {},
             keys: {}
@@ -18,7 +19,8 @@ export default class MAny {
     label(val) {
         this.spec.label = val;
     }
-    message() {
+    message(val) {
+        this.spec.message = val;
     }
     required(trim, handler) {
         var ruleName = 'required'

@@ -9,8 +9,11 @@ export var addRule = (typeIns, ruleName, options) => {
     }
 }
 
+export var fireMessage = (typeIns) => {
+}
+
 export var validate = (typeIns, value) => {
-    typeIns.spec.async ? validateSync(typeIns, value) : new Promse((resolve, reject) => {
+    return typeIns.spec.async ? validateSync(typeIns, value) : new Promse((resolve, reject) => {
     });
 }
 export var validateSync = (typeIns, value) => {
