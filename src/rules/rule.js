@@ -1,17 +1,19 @@
 import { getItem } from '../store.js';
 import { extend, formatString, isFunction } from '../util.js';
 
-var getValidResult = (validResult, message) => {
+var getValidResult = (validResult, message, computedOptions) => {
     if (typeof validResult === 'boolean') {
         return {
             valid: validResult,
-            message: message
+            message: message,
+            options: computedOptions
         }
     } else if (typeof validResult === 'object') {
         validResult.message = validResult.message || message;
+        validResult.options = computedOptions;
         return validResult;
     } else {
-        throw new Error('验证规则返回值无效！')
+        console.error('验证规则返回值无效！')
     }
 }
 
@@ -54,13 +56,13 @@ export default class Rule {
 
         if (this.options.async) {
             this.handler.call(this, value, computedOptions, (validResult) => {
-                var result = getValidResult(validResult, message);
+                var result = getValidResult(validResult, message, computedOptions);
                 if (isFunction(callback)) {
                     callback(result)
                 }
             });
         } else {
-            return getValidResult(this.handler.call(this, value, computedOptions), message);
+            return getValidResult(this.handler.call(this, value, computedOptions), message, computedOptions);
         }
     }
 

@@ -4,8 +4,10 @@ const MSchema = {
     version
 };
 ['any', 'string', 'number', 'object', 'boolean', 'array'].forEach(type => {
-    MSchema[type] = function () {
-        return new MType[type]()
+    if (MType[type]) {
+        MSchema[type] = function () {
+            return new MType[type]()
+        }
     }
 });
 export default MSchema;

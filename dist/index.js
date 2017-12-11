@@ -248,17 +248,19 @@ var options = {
     }
 };
 
-var getValidResult = function getValidResult(validResult, message) {
+var getValidResult = function getValidResult(validResult, message, computedOptions) {
     if (typeof validResult === 'boolean') {
         return {
             valid: validResult,
-            message: message
+            message: message,
+            options: computedOptions
         };
     } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
         validResult.message = validResult.message || message;
+        validResult.options = computedOptions;
         return validResult;
     } else {
-        throw new Error('验证规则返回值无效！');
+        console.error('验证规则返回值无效！');
     }
 };
 
@@ -306,13 +308,13 @@ var Rule = function () {
 
             if (this.options.async) {
                 this.handler.call(this, value, computedOptions, function (validResult) {
-                    var result = getValidResult(validResult, message);
+                    var result = getValidResult(validResult, message, computedOptions);
                     if (isFunction(callback)) {
                         callback(result);
                     }
                 });
             } else {
-                return getValidResult(this.handler.call(this, value, computedOptions), message);
+                return getValidResult(this.handler.call(this, value, computedOptions), message, computedOptions);
             }
         }
     }, {
@@ -434,14 +436,87 @@ var AsyncRule = function (_Rule) {
     return AsyncRule;
 }(Rule);
 
+var defaultHandler$2 = {
+    'any': function any(target, limit) {
+        return true;
+    },
+    'array': function array(target, limit) {
+        return !limit ? true : target && target.length >= limit;
+    },
+    'string': function string(target, limit) {
+        return !limit ? true : target && target.length >= limit;
+    },
+    'number': function number(target, limit) {
+        if (typeof target === 'number') {
+            return target >= limit;
+        }
+        if (typeof target === 'string') {
+            return isNaN(target) ? false : target >= limit;
+        }
+        if (target && target.valueOf) {
+            return target.valueOf() >= limit;
+        }
+        return false;
+    }
+};
+
+var IsType$2 = function (_Rule) {
+    inherits(IsType, _Rule);
+
+    function IsType() {
+        classCallCheck(this, IsType);
+        return possibleConstructorReturn(this, (IsType.__proto__ || Object.getPrototypeOf(IsType)).call(this, 'min', function (value, options$$1) {
+            var store = getItem(this.typeIns.id);
+            return (defaultHandler$2[store.spec.type] || defaultHandler$2['any'])(value, options$$1.value, options$$1);
+        }, options.rules.min));
+    }
+
+    createClass(IsType, [{
+        key: 'mount',
+        value: function mount(typeIns, mountOptions) {
+            this.mountedOptions = this.mountedOptions || {};
+            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+                extend(true, this.mountedOptions, mountOptions);
+            } else if (typeof mountOptions === 'number') {
+                this.mountedOptions.value = mountOptions;
+            }
+            get(IsType.prototype.__proto__ || Object.getPrototypeOf(IsType.prototype), 'mount', this).call(this, typeIns);
+        }
+    }]);
+    return IsType;
+}(Rule);
+
 var Rules = {
     required: Required,
     isType: IsType,
-    'async': AsyncRule
+    'async': AsyncRule,
+    min: IsType$2
 };
 
-var addRule = function addRule(typeIns, ruleName, options$$1) {
+var registerRule = function registerRule(mtype, rules) {
+    rules.forEach(function (ruleName) {
+        if (Rules[ruleName]) {
+            mtype.prototype[ruleName] = function () {
+                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                    args[_key] = arguments[_key];
+                }
+
+                mountRule.apply(null, [this, ruleName].concat(args));
+                return this;
+            };
+        }
+    });
+};
+
+var mountRule = function mountRule(typeIns, ruleName, options$$1) {
     new Rules[ruleName]().mount(typeIns, options$$1);
+};
+
+var changeType = function changeType(typeIns, type) {
+    getItem(typeIns.id).spec.type = type;
+    mountRule(typeIns, 'isType', {
+        value: type
+    });
 };
 
 var validate = function validate(typeIns, value, callback) {
@@ -519,9 +594,6 @@ var MAny = function () {
             rules: {}
         };
         setItem(this.id, DATA); // 私有变量，保护功能
-        addRule(this, 'isType', {
-            value: DATA.spec.type
-        });
     }
 
     createClass(MAny, [{
@@ -555,19 +627,28 @@ var MAny = function () {
     return MAny;
 }();
 
-['required', 'async'].forEach(function (ruleName) {
-    MAny.prototype[ruleName] = function () {
-        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            args[_key2] = arguments[_key2];
-        }
+registerRule(MAny, ['required', 'async']);
 
-        addRule.apply(null, [this, ruleName].concat(args));
-        return this;
-    };
-});
+var MNumber = function (_MAny) {
+    inherits(MNumber, _MAny);
+
+    function MNumber() {
+        classCallCheck(this, MNumber);
+
+        var _this = possibleConstructorReturn(this, (MNumber.__proto__ || Object.getPrototypeOf(MNumber)).call(this));
+
+        changeType(_this, 'number');
+        return _this;
+    }
+
+    return MNumber;
+}(MAny);
+
+registerRule(MNumber, ['min', 'max']);
 
 var MType = {
-    any: MAny
+    any: MAny,
+    number: MNumber
 };
 
 var version = "0.1.0";
@@ -576,9 +657,11 @@ var MSchema = {
     version: version
 };
 ['any', 'string', 'number', 'object', 'boolean', 'array'].forEach(function (type) {
-    MSchema[type] = function () {
-        return new MType[type]();
-    };
+    if (MType[type]) {
+        MSchema[type] = function () {
+            return new MType[type]();
+        };
+    }
 });
 
 return MSchema;

@@ -3,8 +3,26 @@ import Options from '../options.js';
 import { getItem } from '../store.js';
 import { isFunction } from '../util.js';
 
-export var addRule = (typeIns, ruleName, options) => {
+export var registerRule = (mtype, rules) => {
+    rules.forEach(ruleName => {
+        if (Rules[ruleName]) {
+            mtype.prototype[ruleName] = function (...args) {
+                mountRule.apply(null, [this, ruleName, ...args]);
+                return this;
+            }
+        }
+    });
+}
+
+export var mountRule = (typeIns, ruleName, options) => {
     new Rules[ruleName]().mount(typeIns, options)
+}
+
+export var changeType = (typeIns, type) => {
+    getItem(typeIns.id).spec.type = type;
+    mountRule(typeIns, 'isType', {
+        value: type
+    })
 }
 
 export var validate = (typeIns, value, callback) => {

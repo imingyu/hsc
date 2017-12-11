@@ -1,5 +1,5 @@
 import { setItem, getItem } from '../store.js';
-import { addRule, validate } from './helper.js';
+import { mountRule, validate, registerRule } from './helper.js';
 import { uniqueID } from '../util.js'
 
 class MAny {
@@ -17,9 +17,6 @@ class MAny {
             rules: {}
         };
         setItem(this.id, DATA); // 私有变量，保护功能
-        addRule(this, 'isType', {
-            value: DATA.spec.type
-        })
     }
     name(val) {
         getItem(this.id).spec.name = val;
@@ -38,11 +35,6 @@ class MAny {
     }
 }
 
-['required', 'async'].forEach(ruleName => {
-    MAny.prototype[ruleName] = function (...args) {
-        addRule.apply(null, [this, ruleName, ...args]);
-        return this;
-    }
-});
+registerRule(MAny, ['required', 'async']);
 
 export default MAny;

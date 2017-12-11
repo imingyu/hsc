@@ -1,4 +1,7 @@
 import MAny from './any.js';
+import MNumber from './number.js';
+
 export default {
-    any: MAny
+    any: MAny,
+    number: MNumber
 }
