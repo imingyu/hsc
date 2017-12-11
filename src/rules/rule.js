@@ -1,11 +1,26 @@
 import { getItem } from '../store.js';
-import { extend, formatString } from '../util.js'
+import { extend, formatString, isFunction } from '../util.js';
+
+var getValidResult = (validResult, message) => {
+    if (typeof validResult === 'boolean') {
+        return {
+            valid: validResult,
+            message: message
+        }
+    } else if (typeof validResult === 'object') {
+        validResult.message = validResult.message || message;
+        return validResult;
+    } else {
+        throw new Error('验证规则返回值无效！')
+    }
+}
 
 export default class Rule {
     constructor(name, handler, options) {
         this.name = name;
         this.handler = handler;
         this.options = options || {};
+        this.mountedOptions = {}
     }
 
     mount(typeIns) {
@@ -20,8 +35,8 @@ export default class Rule {
         }
     }
 
-    validate(value, validateOptions) {
-        let computedOptions = this.computeOptions(validateOptions);
+    validate(value, callback) {
+        let computedOptions = this.computeOptions();
         let store = getItem(this.typeIns.id);
         let message = computedOptions.message;
         let messageValues = {
@@ -37,23 +52,19 @@ export default class Rule {
         }
         message = message ? formatString(message + '', messageValues) : '';
 
-        const validResult = this.handler.call(this, value, computedOptions);
-        if (typeof validResult === 'boolean') {
-            return {
-                valid: validResult,
-                message: message,
-                options: computedOptions
-            }
-        } else if (typeof validResult === 'object') {
-            validResult.options = computedOptions;
-            validResult.message = validResult.message || message;
-            return validResult;
+        if (this.options.async) {
+            this.handler.call(this, value, computedOptions, (validResult) => {
+                var result = getValidResult(validResult, message);
+                if (isFunction(callback)) {
+                    callback(result)
+                }
+            });
         } else {
-            throw new Error('验证规则返回值无效！')
+            return getValidResult(this.handler.call(this, value, computedOptions), message);
         }
     }
 
     computeOptions(...args) {
-        return extend.apply(null, [true, {}, this.options, ...args]);
+        return extend.apply(null, [true, {}, this.options, this.mountedOptions, ...args]);
     }
 }

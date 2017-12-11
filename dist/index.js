@@ -124,6 +124,9 @@ var uniqueID = function uniqueID() {
 var isObject = function isObject(obj) {
     return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
 };
+var isFunction = function isFunction(obj) {
+    return typeof obj === 'function' || obj instanceof Function;
+};
 var isEmptyObject = function isEmptyObject(obj) {
     var prop = void 0;
     for (prop in obj) {
@@ -245,6 +248,20 @@ var options = {
     }
 };
 
+var getValidResult = function getValidResult(validResult, message) {
+    if (typeof validResult === 'boolean') {
+        return {
+            valid: validResult,
+            message: message
+        };
+    } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
+        validResult.message = validResult.message || message;
+        return validResult;
+    } else {
+        throw new Error('验证规则返回值无效！');
+    }
+};
+
 var Rule = function () {
     function Rule(name, handler, options) {
         classCallCheck(this, Rule);
@@ -252,6 +269,7 @@ var Rule = function () {
         this.name = name;
         this.handler = handler;
         this.options = options || {};
+        this.mountedOptions = {};
     }
 
     createClass(Rule, [{
@@ -269,8 +287,8 @@ var Rule = function () {
         }
     }, {
         key: 'validate',
-        value: function validate(value, validateOptions) {
-            var computedOptions = this.computeOptions(validateOptions);
+        value: function validate(value, callback) {
+            var computedOptions = this.computeOptions();
             var store = getItem(this.typeIns.id);
             var message = computedOptions.message;
             var messageValues = {
@@ -286,19 +304,15 @@ var Rule = function () {
             }
             message = message ? formatString(message + '', messageValues) : '';
 
-            var validResult = this.handler.call(this, value, computedOptions);
-            if (typeof validResult === 'boolean') {
-                return {
-                    valid: validResult,
-                    message: message,
-                    options: computedOptions
-                };
-            } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
-                validResult.options = computedOptions;
-                validResult.message = validResult.message || message;
-                return validResult;
+            if (this.options.async) {
+                this.handler.call(this, value, computedOptions, function (validResult) {
+                    var result = getValidResult(validResult, message);
+                    if (isFunction(callback)) {
+                        callback(result);
+                    }
+                });
             } else {
-                throw new Error('验证规则返回值无效！');
+                return getValidResult(this.handler.call(this, value, computedOptions), message);
             }
         }
     }, {
@@ -308,7 +322,7 @@ var Rule = function () {
                 args[_key] = arguments[_key];
             }
 
-            return extend.apply(null, [true, {}, this.options].concat(args));
+            return extend.apply(null, [true, {}, this.options, this.mountedOptions].concat(args));
         }
     }]);
     return Rule;
@@ -330,13 +344,13 @@ var defaultHandler = {
     'array': function array(val) {
         return Array.isArray(val) && val.length > 0;
     },
-    'string': function string(val, trimString) {
+    'string': function string(val, ops) {
         var type = typeof val === 'undefined' ? 'undefined' : _typeof(val);
         if (type === 'number' && !isNaN(val)) {
             return true;
         }
         if (type === 'string' && val) {
-            if (trimString) {
+            if (ops && ops.trimString) {
                 return val.trim() !== '';
             } else {
                 return true;
@@ -351,7 +365,7 @@ var Required = function (_Rule) {
 
     function Required() {
         classCallCheck(this, Required);
-        return possibleConstructorReturn(this, (Required.__proto__ || Object.getPrototypeOf(Required)).call(this, 'required', function (value, options$$1) {
+        return possibleConstructorReturn(this, (Required.__proto__ || Object.getPrototypeOf(Required)).call(this, 'required', function (value, options$$1, callback) {
             var store = getItem(this.typeIns.id);
             return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options$$1);
         }, options.rules.required));
@@ -402,18 +416,75 @@ var IsType = function (_Rule) {
     return IsType;
 }(Rule);
 
+var AsyncRule = function (_Rule) {
+    inherits(AsyncRule, _Rule);
+
+    function AsyncRule() {
+        classCallCheck(this, AsyncRule);
+        return possibleConstructorReturn(this, (AsyncRule.__proto__ || Object.getPrototypeOf(AsyncRule)).call(this, 'async', function (value, options$$1, callback) {
+            console.log('start AsyncRule');
+            setTimeout(function () {
+                callback(true);
+            }, 3 * 1000);
+        }, {
+            async: true
+        }));
+    }
+
+    return AsyncRule;
+}(Rule);
+
 var Rules = {
     required: Required,
-    isType: IsType
+    isType: IsType,
+    'async': AsyncRule
 };
 
 var addRule = function addRule(typeIns, ruleName, options$$1) {
     new Rules[ruleName]().mount(typeIns, options$$1);
 };
 
-var validate = function validate(typeIns, value) {
+var validate = function validate(typeIns, value, callback) {
     var store = getItem(typeIns.id);
-    return store.spec.async ? new Promse(function (resolve, reject) {}) : validateSync(typeIns, value);
+    if (store.spec.async) {
+        var result = {
+            valid: true,
+            label: store.spec.label,
+            rules: {},
+            message: store.spec.message
+        };
+
+        var asyncRules = [];
+        Object.keys(store.rules).forEach(function (name) {
+            var rule = store.rules[name];
+            if (rule.options.async) {
+                asyncRules.push(rule);
+            } else {
+                result.rules[name] = rule.validate(value);
+                result.valid = result.valid && result.rules[name].valid;
+            }
+        });
+
+        var execSize = 0;
+        var checkIsEnd = function checkIsEnd() {
+            execSize++;
+            if (execSize >= asyncRules.length) {
+                if (isFunction(callback)) {
+                    callback(result);
+                }
+            }
+        };
+
+        asyncRules.forEach(function (rule) {
+            rule.validate(value, function (validResult) {
+                result.rules[rule.name] = validResult;
+                result.valid = result.valid && result.rules[rule.name].valid;
+                checkIsEnd();
+            });
+        });
+    } else {
+        return validateSync(typeIns, value);
+    }
 };
 var validateSync = function validateSync(typeIns, value) {
     var store = getItem(typeIns.id);
@@ -473,17 +544,21 @@ var MAny = function () {
         }
     }, {
         key: 'validate',
-        value: function validate$$1(value) {
-            return validate(this, value);
+        value: function validate$$1() {
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
+            }
+
+            return validate.apply(null, [this].concat(args));
         }
     }]);
     return MAny;
 }();
 
-['required'].forEach(function (ruleName) {
+['required', 'async'].forEach(function (ruleName) {
     MAny.prototype[ruleName] = function () {
-        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
+        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            args[_key2] = arguments[_key2];
         }
 
         addRule.apply(null, [this, ruleName].concat(args));

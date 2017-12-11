@@ -3,6 +3,7 @@ export const uniqueID = () => {
 }
 
 export var isObject = (obj) => typeof obj === 'object';
+export var isFunction = (obj) => typeof obj === 'function' || obj instanceof Function;
 export var isEmptyObject = (obj) => {
     let prop;
     for (prop in obj) {

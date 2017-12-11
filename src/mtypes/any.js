@@ -33,12 +33,12 @@ class MAny {
         getItem(this.id).spec.message = val;
         return this;
     }
-    validate(value) {
-        return validate(this, value)
+    validate(...args) {
+        return validate.apply(null, [this, ...args])
     }
 }
 
-['required'].forEach(ruleName => {
+['required', 'async'].forEach(ruleName => {
     MAny.prototype[ruleName] = function (...args) {
         addRule.apply(null, [this, ruleName, ...args]);
         return this;

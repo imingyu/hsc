@@ -19,13 +19,13 @@ var defaultHandler = {
     'array': val => {
         return Array.isArray(val) && val.length > 0;
     },
-    'string': (val, trimString) => {
+    'string': (val, ops) => {
         var type = typeof val;
         if (type === 'number' && !isNaN(val)) {
             return true;
         }
         if (type === 'string' && val) {
-            if (trimString) {
+            if (ops && ops.trimString) {
                 return val.trim() !== '';
             } else {
                 return true;
@@ -36,7 +36,7 @@ var defaultHandler = {
 }
 export default class Required extends Rule {
     constructor() {
-        super('required', function (value, options) {
+        super('required', function (value, options, callback) {
             let store = getItem(this.typeIns.id);
             return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
         }, defaultOptions.rules.required)
