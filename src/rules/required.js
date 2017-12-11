@@ -1,6 +1,7 @@
-import { isEmptyObject } from '../util.js';
+import { isObject, isEmptyObject, extend } from '../util.js';
 import defaultOptions from '../options.js';
-import createRule from './createRule.js';
+import Rule from './rule.js';
+import { getItem } from '../store.js';
 
 var defaultHandler = {
     'any': val => {
@@ -33,6 +34,23 @@ var defaultHandler = {
         return false;
     }
 }
-export default createRule('required', function (value, options) {
-    return (defaultHandler[this.typeIns.spec.type] || defaultHandler['any'])(value, options)
-}, null, defaultOptions.rules.required);
+export default class Required extends Rule {
+    constructor() {
+        super('required', function (value, options) {
+            let store = getItem(this.typeIns.id);
+            return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
+        }, defaultOptions.rules.required)
+    }
+
+    mount(typeIns, mountOptions) {
+        this.mountedOptions = this.mountedOptions || {};
+        if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+            extend(true, this.mountedOptions, mountOptions)
+        } else if (typeof mountOptions === 'string') {
+            this.mountedOptions.message = mountOptions;
+        } else if (typeof mountOptions === 'boolean') {
+            this.mountedOptions.value = mountOptions;
+        }
+        super.mount(typeIns);
+    }
+}

@@ -1,5 +1,6 @@
 import defaultOptions from '../options.js';
-import createRule from './createRule.js';
+import Rule from './rule.js';
+import { getItem } from '../store.js';
 
 var defaultHandler = {
     'any': val => {
@@ -14,6 +15,12 @@ var defaultHandler = {
         return typeof val === item;
     }
 })
-export default createRule('isType', function (value, options) {
-    return (defaultHandler[this.typeIns.spec.type] || defaultHandler['any'])(value, options)
-}, false, defaultOptions.rules.isType);
+
+export default class IsType extends Rule {
+    constructor() {
+        super('isType', function (value, options) {
+            let store = getItem(this.typeIns.id);
+            return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
+        }, defaultOptions.rules.isType)
+    }
+}

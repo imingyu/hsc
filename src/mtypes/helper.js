@@ -1,25 +1,28 @@
-import Rule from '../rules/index.js';
+import Rules from '../rules/index.js';
 import Options from '../options.js';
-import * as util from '../util.js'
+import { getItem } from '../store.js'
 
 export var addRule = (typeIns, ruleName, options) => {
-    new Rule[ruleName]().mount(typeIns, options)
+    new Rules[ruleName]().mount(typeIns, options)
 }
 
 export var validate = (typeIns, value) => {
-    return typeIns.spec.async ? new Promse((resolve, reject) => {
+    var store = getItem(typeIns.id)
+    return store.spec.async ? new Promse((resolve, reject) => {
     }) : validateSync(typeIns, value);
 }
 export var validateSync = (typeIns, value) => {
+    var store = getItem(typeIns.id)
     var result = {
         valid: true,
-        label: typeIns.spec.label,
+        label: store.spec.label,
         rules: {},
-        message: ''
+        message: store.spec.message
     }
-    typeIns.rules.forEach(rule => {
-        result.rules[rule.name] = rule.validate(value);
-        result.valid = result.valid && result.rules[rule.name].valid;
+    Object.keys(store.rules).forEach(name => {
+        let rule = store.rules[name]
+        result.rules[name] = rule.validate(value);
+        result.valid = result.valid && result.rules[name].valid;
     });
     return result;
 }

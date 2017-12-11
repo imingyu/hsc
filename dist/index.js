@@ -4,6 +4,14 @@
 	(global.mschema = factory());
 }(this, (function () { 'use strict';
 
+var STORE = {};
+var getItem = function getItem(key) {
+    return STORE[key];
+};
+var setItem = function setItem(key, value) {
+    STORE[key] = value;
+};
+
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -43,6 +51,75 @@ var createClass = function () {
     return Constructor;
   };
 }();
+
+
+
+
+
+
+
+var get = function get(object, property, receiver) {
+  if (object === null) object = Function.prototype;
+  var desc = Object.getOwnPropertyDescriptor(object, property);
+
+  if (desc === undefined) {
+    var parent = Object.getPrototypeOf(object);
+
+    if (parent === null) {
+      return undefined;
+    } else {
+      return get(parent, property, receiver);
+    }
+  } else if ("value" in desc) {
+    return desc.value;
+  } else {
+    var getter = desc.get;
+
+    if (getter === undefined) {
+      return undefined;
+    }
+
+    return getter.call(receiver);
+  }
+};
+
+var inherits = function (subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+  }
+
+  subClass.prototype = Object.create(superClass && superClass.prototype, {
+    constructor: {
+      value: subClass,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+};
+
+
+
+
+
+
+
+
+
+
+
+var possibleConstructorReturn = function (self, call) {
+  if (!self) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }
+
+  return call && (typeof call === "object" || typeof call === "function") ? call : self;
+};
+
+var uniqueID = function uniqueID() {
+    return (Math.random() + '').replace('0.', '');
+};
 
 var isObject = function isObject(obj) {
     return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
@@ -161,92 +238,81 @@ var options = {
     rules: {
         required: {
             label: '必填',
+            value: true,
             trimString: true,
             message: '此项{ruleLabel}'
         }
     }
 };
 
-function createRule(ruleName, ruleHandler, mounthandler) {
-    var ruleOptions = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+var Rule = function () {
+    function Rule(name, handler, options) {
+        classCallCheck(this, Rule);
 
-    var Rule = function () {
-        function Rule() {
-            classCallCheck(this, Rule);
+        this.name = name;
+        this.handler = handler;
+        this.options = options || {};
+    }
 
-            this.name = ruleName;
-            this.handler = ruleHandler;
-            this.options = ruleOptions;
+    createClass(Rule, [{
+        key: 'mount',
+        value: function mount(typeIns) {
+            this.typeIns = typeIns;
+            var store = getItem(typeIns.id);
+            if (this.options.async) {
+                store.spec.async = true;
+            }
+            if (!store.spec.rules[this.name]) {
+                store.spec.rules[this.name] = true;
+                store.rules[this.name] = this;
+            }
         }
-
-        createClass(Rule, [{
-            key: 'mount',
-            value: function mount(typeIns, mountOptions) {
-                this.typeIns = typeIns;
-                if (ruleOptions.async) {
-                    typeIns.spec.async = true;
-                }
-                if (typeof mounthandler === 'function') {
-                    mountOptions = mounthandler.apply(this, [typeIns, mountOptions]);
-                }
-                if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
-                    this.mountOptions = this.mountOptions || {};
-                    extend(true, this.mountOptions, mountOptions);
-                }
-                if (!typeIns.spec.rules[this.name]) {
-                    typeIns.spec.rules[this.name] = true;
-                    typeIns.rules.push(this);
-                }
+    }, {
+        key: 'validate',
+        value: function validate(value, validateOptions) {
+            var computedOptions = this.computeOptions(validateOptions);
+            var store = getItem(this.typeIns.id);
+            var message = computedOptions.message;
+            var messageValues = {
+                value: value,
+                name: store.spec.name,
+                label: store.spec.label,
+                type: store.spec.type,
+                ruleName: this.name,
+                ruleLabel: computedOptions.label
+            };
+            if (typeof message === 'function') {
+                message = message(messageValues);
             }
-        }, {
-            key: 'validate',
-            value: function validate(value, validateOptions) {
-                var computedOptions = this.computeOptions(validateOptions);
-                var message = computedOptions.message;
-                var messageValues = {
-                    value: value,
-                    name: this.typeIns.spec.name,
-                    label: this.typeIns.spec.label,
-                    type: this.typeIns.spec.type,
-                    ruleName: this.name,
-                    ruleLabel: computedOptions.label
+            message = message ? formatString(message + '', messageValues) : '';
+
+            var validResult = this.handler.call(this, value, computedOptions);
+            if (typeof validResult === 'boolean') {
+                return {
+                    valid: validResult,
+                    message: message,
+                    options: computedOptions
                 };
-                if (typeof message === 'function') {
-                    message = message(messageValues);
-                }
-                message = message ? formatString(message + '', messageValues) : '';
-
-                var validResult = this.handler.call(this, value, computedOptions);
-                if (typeof validResult === 'boolean') {
-                    return {
-                        valid: validResult,
-                        message: message,
-                        options: computedOptions
-                    };
-                } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
-                    validResult.options = computedOptions;
-                    validResult.message = validResult.message || message;
-                    return validResult;
-                } else {
-                    throw new Error('验证规则返回值无效！');
-                }
+            } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
+                validResult.options = computedOptions;
+                validResult.message = validResult.message || message;
+                return validResult;
+            } else {
+                throw new Error('验证规则返回值无效！');
             }
-        }, {
-            key: 'computeOptions',
-            value: function computeOptions() {
-                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-                    args[_key] = arguments[_key];
-                }
-
-                return extend.apply(null, [true, {}, this.options, this.mountOptions].concat(args));
+        }
+    }, {
+        key: 'computeOptions',
+        value: function computeOptions() {
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
             }
-        }]);
-        return Rule;
-    }();
 
-    Rule.displayName = ruleName;
+            return extend.apply(null, [true, {}, this.options].concat(args));
+        }
+    }]);
     return Rule;
-}
+}();
 
 var defaultHandler = {
     'any': function any(val) {
@@ -279,9 +345,34 @@ var defaultHandler = {
         return false;
     }
 };
-var required = createRule('required', function (value, options$$1) {
-    return (defaultHandler[this.typeIns.spec.type] || defaultHandler['any'])(value, options$$1);
-}, null, options.rules.required);
+
+var Required = function (_Rule) {
+    inherits(Required, _Rule);
+
+    function Required() {
+        classCallCheck(this, Required);
+        return possibleConstructorReturn(this, (Required.__proto__ || Object.getPrototypeOf(Required)).call(this, 'required', function (value, options$$1) {
+            var store = getItem(this.typeIns.id);
+            return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options$$1);
+        }, options.rules.required));
+    }
+
+    createClass(Required, [{
+        key: 'mount',
+        value: function mount(typeIns, mountOptions) {
+            this.mountedOptions = this.mountedOptions || {};
+            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+                extend(true, this.mountedOptions, mountOptions);
+            } else if (typeof mountOptions === 'string') {
+                this.mountedOptions.message = mountOptions;
+            } else if (typeof mountOptions === 'boolean') {
+                this.mountedOptions.value = mountOptions;
+            }
+            get(Required.prototype.__proto__ || Object.getPrototypeOf(Required.prototype), 'mount', this).call(this, typeIns);
+        }
+    }]);
+    return Required;
+}(Rule);
 
 var defaultHandler$1 = {
     'any': function any(val) {
@@ -296,32 +387,46 @@ var defaultHandler$1 = {
         return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === item;
     };
 });
-var isType = createRule('isType', function (value, options$$1) {
-    return (defaultHandler$1[this.typeIns.spec.type] || defaultHandler$1['any'])(value, options$$1);
-}, false, options.rules.isType);
 
-var Rule = {
-    required: required,
-    isType: isType
+var IsType = function (_Rule) {
+    inherits(IsType, _Rule);
+
+    function IsType() {
+        classCallCheck(this, IsType);
+        return possibleConstructorReturn(this, (IsType.__proto__ || Object.getPrototypeOf(IsType)).call(this, 'isType', function (value, options$$1) {
+            var store = getItem(this.typeIns.id);
+            return (defaultHandler$1[store.spec.type] || defaultHandler$1['any'])(value, options$$1);
+        }, options.rules.isType));
+    }
+
+    return IsType;
+}(Rule);
+
+var Rules = {
+    required: Required,
+    isType: IsType
 };
 
 var addRule = function addRule(typeIns, ruleName, options$$1) {
-    new Rule[ruleName]().mount(typeIns, options$$1);
+    new Rules[ruleName]().mount(typeIns, options$$1);
 };
 
 var validate = function validate(typeIns, value) {
-    return typeIns.spec.async ? new Promse(function (resolve, reject) {}) : validateSync(typeIns, value);
+    var store = getItem(typeIns.id);
+    return store.spec.async ? new Promse(function (resolve, reject) {}) : validateSync(typeIns, value);
 };
 var validateSync = function validateSync(typeIns, value) {
+    var store = getItem(typeIns.id);
     var result = {
         valid: true,
-        label: typeIns.spec.label,
+        label: store.spec.label,
         rules: {},
-        message: ''
+        message: store.spec.message
     };
-    typeIns.rules.forEach(function (rule) {
-        result.rules[rule.name] = rule.validate(value);
-        result.valid = result.valid && result.rules[rule.name].valid;
+    Object.keys(store.rules).forEach(function (name) {
+        var rule = store.rules[name];
+        result.rules[name] = rule.validate(value);
+        result.valid = result.valid && result.rules[name].valid;
     });
     return result;
 };
@@ -330,31 +435,41 @@ var MAny = function () {
     function MAny() {
         classCallCheck(this, MAny);
 
-        this.spec = {
-            name: '',
-            type: 'any',
-            label: '',
-            async: false, // 是否是异步方式验证
+        this.id = uniqueID();
+
+        var DATA = {
+            spec: {
+                name: '',
+                type: 'any',
+                label: '',
+                async: false, // 是否是异步方式验证
+                rules: {}
+            },
             rules: {}
         };
-        this.rules = [];
-        addRule(this, 'isType');
+        setItem(this.id, DATA); // 私有变量，保护功能
+        addRule(this, 'isType', {
+            value: DATA.spec.type
+        });
     }
 
     createClass(MAny, [{
         key: 'name',
         value: function name(val) {
-            this.spec.name = val;
+            getItem(this.id).spec.name = val;
+            return this;
         }
     }, {
         key: 'label',
         value: function label(val) {
-            this.spec.label = val;
+            getItem(this.id).spec.label = val;
+            return this;
         }
     }, {
         key: 'message',
         value: function message(val) {
-            this.spec.message = val;
+            getItem(this.id).spec.message = val;
+            return this;
         }
     }, {
         key: 'validate',

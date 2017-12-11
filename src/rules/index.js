@@ -1,8 +1,8 @@
-import required from './required.js';
-import isType from './isType.js';
+import Required from './required.js';
+import IsType from './isType.js';
 
-var Rule = {
-    required,
-    isType
+var Rules = {
+    required: Required,
+    isType: IsType
 }
-export default Rule;
+export default Rules;

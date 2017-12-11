@@ -1,3 +1,7 @@
+export const uniqueID = () => {
+    return (Math.random() + '').replace('0.', '')
+}
+
 export var isObject = (obj) => typeof obj === 'object';
 export var isEmptyObject = (obj) => {
     let prop;
