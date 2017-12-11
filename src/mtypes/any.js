@@ -1,20 +1,20 @@
 import { addRule, validate } from './helper.js';
 import * as util from '../util.js'
 
-export default class MAny {
+class MAny {
     constructor() {
-        this.options = {
-            rules: {}
-        };
         this.spec = {
+            name: '',
             type: 'any',
             label: '',
             async: false,// 是否是异步方式验证
-            rules: {},
-            keys: {}
+            rules: {}
         }
         this.rules = [];
         addRule(this, 'isType')
+    }
+    name(val) {
+        this.spec.name = val;
     }
     label(val) {
         this.spec.label = val;
@@ -22,19 +22,16 @@ export default class MAny {
     message(val) {
         this.spec.message = val;
     }
-    required(trim, handler) {
-        var ruleName = 'required'
-        if (this.spec.rule[ruleName]) return;
-        this.options.rules[ruleName] = this.options.rules[ruleName] || {}
-        if (typeof trim !== 'undefined') {
-            this.options.rules[ruleName].trim = trim;
-        }
-        if (typeof handler !== 'undefined') {
-            this.options.rules[ruleName].handler = handler;
-        }
-        addRule(this, ruleName)
-    }
     validate(value) {
         return validate(this, value)
     }
 }
+
+['required'].forEach(ruleName => {
+    MAny.prototype[ruleName] = function (...args) {
+        addRule.apply(null, [this, ruleName, ...args]);
+        return this;
+    }
+});
+
+export default MAny;

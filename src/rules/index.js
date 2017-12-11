@@ -1,5 +1,5 @@
 import required from './required.js';
-import isType from './type.js';
+import isType from './isType.js';
 
 var Rule = {
     required,

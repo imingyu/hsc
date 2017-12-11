@@ -1,9 +1,16 @@
+export var isObject = (obj) => typeof obj === 'object';
 export var isEmptyObject = (obj) => {
     let prop;
     for (prop in obj) {
         return false;
     }
     return true;
+}
+
+export const formatString = (template, values = {}) => {
+    return template.replace(/{([^}]*)}/g, function (match, key) {
+        return key in values ? values[key] : match;
+    });
 }
 
 

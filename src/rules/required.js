@@ -1,4 +1,6 @@
-import * as util from '../util.js';
+import { isEmptyObject } from '../util.js';
+import defaultOptions from '../options.js';
+import createRule from './createRule.js';
 
 var defaultHandler = {
     'any': val => {
@@ -11,19 +13,18 @@ var defaultHandler = {
         return typeof val === 'boolean';
     },
     'object': val => {
-        return typeof val === 'object' && val !== null && !util.isEmptyObject(obj);
+        return typeof val === 'object' && val !== null && !isEmptyObject(obj);
     },
     'array': val => {
         return Array.isArray(val) && val.length > 0;
     },
-    'string': (val, trim) => {
-
+    'string': (val, trimString) => {
         var type = typeof val;
         if (type === 'number' && !isNaN(val)) {
             return true;
         }
         if (type === 'string' && val) {
-            if (trim) {
+            if (trimString) {
                 return val.trim() !== '';
             } else {
                 return true;
@@ -32,12 +33,6 @@ var defaultHandler = {
         return false;
     }
 }
-export default (type, { trim, handler }) => {
-    handler = handler ? handler : defaultHandler[type];
-    return (value) => {
-        if (typeof value === 'undefined') {
-            return false;
-        }
-        return handler(value, type, trim)
-    }
-}
+export default createRule('required', function (value, options) {
+    return (defaultHandler[this.typeIns.spec.type] || defaultHandler['any'])(value, options)
+}, null, defaultOptions.rules.required);
