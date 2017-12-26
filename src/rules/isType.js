@@ -24,13 +24,4 @@ export default class IsType extends Rule {
             return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
         }, defaultOptions.rules.isType)
     }
-
-    mount(typeIns, mountOptions) {
-        if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
-            extend(true, this.mountedOptions, mountOptions)
-        } else {
-            this.mountedOptions.value = mountOptions;
-        }
-        super.mount(typeIns);
-    }
 }

@@ -36,7 +36,6 @@ export default class Min extends Rule {
     }
 
     mount(typeIns, mountOptions) {
-        this.mountedOptions = this.mountedOptions || {};
         if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
             extend(true, this.mountedOptions, mountOptions)
         } else if (typeof mountOptions === 'number') {

@@ -36,9 +36,14 @@ var defaultHandler = {
 }
 export default class Required extends Rule {
     constructor() {
-        super('required', function (value, options, callback) {
+        super('required', function (value, options) {
             let store = getItem(this.typeIns.id);
-            return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
+            var result = (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options);
+            if (options.value) {
+                return result;
+            } else {
+                return true;
+            }
         }, defaultOptions.rules.required)
     }
 

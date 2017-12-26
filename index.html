@@ -14,13 +14,16 @@
         // console.log(mschema.number().required().min(1).max(5).validate(''));
         // console.log(mschema.string().required().min(1).max(5).validate('2'));
         // console.log(mschema.object().required().validate('2'));
-        console.log(mschema.object().required().keys({
+        var result = mschema.object().required().keys({
             name: mschema.string().required(),
-            age: mschema.number().required()
+            age: mschema.number().required(),
+            email: mschema.string().email()
         }).validate({
             name: 'Tom',
-            age: 20
-        }));
+            age: 20,
+            email: '123@163.com'
+        });
+        console.log(`result=>`, result);
     </script>
 </body>
 

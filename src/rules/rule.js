@@ -28,10 +28,13 @@ export default class Rule {
     mount(typeIns, mountOptions) {
         this.typeIns = typeIns;
         if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
-            extend(true, this.mountedOptions, mountOptions);
+            extend(true, this.mountedOptions, mountOptions)
+        } else {
+            this.mountedOptions.value = mountOptions;
         }
         let store = getItem(typeIns.id);
-        if (this.options.async) {
+        var options = this.computeOptions();
+        if (options.async) {
             store.spec.async = true;
         }
         store.rules[this.name] = this;
@@ -60,7 +63,7 @@ export default class Rule {
         }
         message = message ? message : '';
 
-        if (this.options.async) {
+        if (computedOptions.async) {
             this.handler.call(this, value, computedOptions, (validResult) => {
                 var result = getValidResult(validResult, message, computedOptions);
                 if (isFunction(callback)) {

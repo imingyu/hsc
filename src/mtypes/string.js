@@ -10,6 +10,6 @@ class MString extends MAny {
 }
 
 
-registerRule(MString, ['min', 'max']);
+registerRule(MString, ['min', 'max', 'email', 'hex', 'ipv4', 'ipv6', 'ip', 'url', 'time']);
 
 export default MString;

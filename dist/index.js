@@ -261,7 +261,30 @@ var options = {
         },
         isType: {
             message: '值类型必须为{ruleValue}'
+        },
+        email: {
+            label: 'Email',
+            message: '值必须为{ruleLabel}格式'
         }
+    },
+    regexes: {
+        affirmative: /^(?:1|t(?:rue)?|y(?:es)?|ok(?:ay)?)$/,
+        alphaNumeric: /^[A-Za-z0-9]+$/,
+        caPostalCode: /^(?!.*[DFIOQU])[A-VXY][0-9][A-Z]\s?[0-9][A-Z][0-9]$/,
+        creditCard: /^(?:(4[0-9]{12}(?:[0-9]{3})?)|(5[1-5][0-9]{14})|(6(?:011|5[0-9]{2})[0-9]{12})|(3[47][0-9]{13})|(3(?:0[0-5]|[68][0-9])[0-9]{11})|((?:2131|1800|35[0-9]{3})[0-9]{11}))$/,
+        dateString: /^(1[0-2]|0?[1-9])([\/-])(3[01]|[12][0-9]|0?[1-9])(?:\2)(?:[0-9]{2})?[0-9]{2}$/,
+        email: /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i, // eslint-disable-line no-control-regex
+        eppPhone: /^\+[0-9]{1,3}\.[0-9]{4,14}(?:x.+)?$/,
+        hexadecimal: /^(?:0x)?[0-9a-fA-F]+$/,
+        hex: /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+        ipv4: /^(?:(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/,
+        ipv6: /^((?=.*::)(?!.*::.+::)(::)?([\dA-F]{1,4}:(:|\b)|){5}|([\dA-F]{1,4}:){6})((([\dA-F]{1,4}((?!\3)::|:\b|$))|(?!\2\3)){2}|(((2[0-4]|1\d|[1-9])?\d|25[0-5])\.?\b){4})$/i,
+        nanpPhone: /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/,
+        socialSecurityNumber: /^(?!000|666)[0-8][0-9]{2}-?(?!00)[0-9]{2}-?(?!0000)[0-9]{4}$/,
+        time: /^(2[0-3]|[01]?[0-9]):([0-5]?[0-9]):([0-5]?[0-9])$/,
+        ukPostCode: /^[A-Z]{1,2}[0-9RCHNQ][0-9A-Z]?\s?[0-9][ABD-HJLNP-UW-Z]{2}$|^[A-Z]{2}-?[0-9]{4}$/,
+        url: /^(?:(?:https?|ftp):\/\/)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/\S*)?$/i,
+        usZipCode: /^[0-9]{5}(?:-[0-9]{4})?$/
     }
 };
 
@@ -297,9 +320,12 @@ var Rule = function () {
             this.typeIns = typeIns;
             if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
                 extend(true, this.mountedOptions, mountOptions);
+            } else {
+                this.mountedOptions.value = mountOptions;
             }
             var store = getItem(typeIns.id);
-            if (this.options.async) {
+            var options = this.computeOptions();
+            if (options.async) {
                 store.spec.async = true;
             }
             store.rules[this.name] = this;
@@ -329,7 +355,7 @@ var Rule = function () {
             }
             message = message ? message : '';
 
-            if (this.options.async) {
+            if (computedOptions.async) {
                 this.handler.call(this, value, computedOptions, function (validResult) {
                     var result = getValidResult(validResult, message, computedOptions);
                     if (isFunction$1(callback)) {
@@ -390,9 +416,14 @@ var Required = function (_Rule) {
 
     function Required() {
         classCallCheck(this, Required);
-        return possibleConstructorReturn(this, (Required.__proto__ || Object.getPrototypeOf(Required)).call(this, 'required', function (value, options$$1, callback) {
+        return possibleConstructorReturn(this, (Required.__proto__ || Object.getPrototypeOf(Required)).call(this, 'required', function (value, options$$1) {
             var store = getItem(this.typeIns.id);
-            return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options$$1);
+            var result = (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options$$1);
+            if (options$$1.value) {
+                return result;
+            } else {
+                return true;
+            }
         }, options.rules.required));
     }
 
@@ -438,17 +469,6 @@ var IsType = function (_Rule) {
         }, options.rules.isType));
     }
 
-    createClass(IsType, [{
-        key: 'mount',
-        value: function mount(typeIns, mountOptions) {
-            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
-                extend(true, this.mountedOptions, mountOptions);
-            } else {
-                this.mountedOptions.value = mountOptions;
-            }
-            get(IsType.prototype.__proto__ || Object.getPrototypeOf(IsType.prototype), 'mount', this).call(this, typeIns);
-        }
-    }]);
     return IsType;
 }(Rule);
 
@@ -507,7 +527,6 @@ var Min = function (_Rule) {
     createClass(Min, [{
         key: 'mount',
         value: function mount(typeIns, mountOptions) {
-            this.mountedOptions = this.mountedOptions || {};
             if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
                 extend(true, this.mountedOptions, mountOptions);
             } else if (typeof mountOptions === 'number') {
@@ -557,7 +576,6 @@ var Max = function (_Rule) {
     createClass(Max, [{
         key: 'mount',
         value: function mount(typeIns, mountOptions) {
-            this.mountedOptions = this.mountedOptions || {};
             if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
                 extend(true, this.mountedOptions, mountOptions);
             } else if (typeof mountOptions === 'number') {
@@ -569,6 +587,39 @@ var Max = function (_Rule) {
     return Max;
 }(Rule);
 
+var rules = {};
+Object.keys(options.regexes).forEach(function (item) {
+    var RegexRule = function (_Rule) {
+        inherits(RegexRule, _Rule);
+
+        function RegexRule() {
+            classCallCheck(this, RegexRule);
+            return possibleConstructorReturn(this, (RegexRule.__proto__ || Object.getPrototypeOf(RegexRule)).call(this, item, function (value, options$$1) {
+                return typeof value === 'string' && options.regexes[item].test(value);
+            }, options.rules[item]));
+        }
+
+        return RegexRule;
+    }(Rule);
+
+    rules[item] = RegexRule;
+});
+
+var Ip = function (_Rule2) {
+    inherits(Ip, _Rule2);
+
+    function Ip() {
+        classCallCheck(this, Ip);
+        return possibleConstructorReturn(this, (Ip.__proto__ || Object.getPrototypeOf(Ip)).call(this, 'ip', function (value, options$$1) {
+            return typeof value === 'string' && (options.regexes.ipv4.test(value) || options.regexes.ipv6.test(value));
+        }, options.rules.ip));
+    }
+
+    return Ip;
+}(Rule);
+
+rules.ip = Ip;
+
 var Rules = {
     required: Required,
     isType: IsType,
@@ -576,6 +627,9 @@ var Rules = {
     min: Min,
     max: Max
 };
+Object.keys(rules).forEach(function (item) {
+    Rules[item] = rules[item];
+});
 
 var registerRule = function registerRule(mtype, rules) {
     rules.forEach(function (ruleName) {
@@ -758,7 +812,7 @@ var MString = function (_MAny) {
     return MString;
 }(MAny);
 
-registerRule(MString, ['min', 'max']);
+registerRule(MString, ['min', 'max', 'email', 'hex', 'ipv4', 'ipv6', 'ip', 'url', 'time']);
 
 var MKeys = function (_MAny) {
     inherits(MKeys, _MAny);
@@ -856,7 +910,14 @@ var MType = {
 var version = "0.1.0";
 
 var MSchema = {
-    version: version
+    version: version,
+    validate: function validate(value, schema, callback) {
+        if (schema) {
+            return schema.validate(value, callback);
+        } else {
+            return true;
+        }
+    }
 };
 ['any', 'string', 'number', 'object', 'boolean', 'array'].forEach(function (type) {
     if (MType[type]) {
