@@ -6,7 +6,6 @@ import { getItem } from '../store.js';
 export default class AsyncRule extends Rule {
     constructor() {
         super('async', function (value, options, callback) {
-            console.log(`start AsyncRule`)
             setTimeout(() => {
                 callback(true)
             }, 3 * 1000)

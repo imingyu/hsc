@@ -1,3 +1,4 @@
+import { isObject, isEmptyObject, extend } from '../util.js';
 import defaultOptions from '../options.js';
 import Rule from './rule.js';
 import { getItem } from '../store.js';
@@ -22,5 +23,14 @@ export default class IsType extends Rule {
             let store = getItem(this.typeIns.id);
             return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options)
         }, defaultOptions.rules.isType)
+    }
+
+    mount(typeIns, mountOptions) {
+        if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+            extend(true, this.mountedOptions, mountOptions)
+        } else {
+            this.mountedOptions.value = mountOptions;
+        }
+        super.mount(typeIns);
     }
 }

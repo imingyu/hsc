@@ -8,31 +8,31 @@ var defaultHandler = {
         return true;
     },
     'array': (target, limit) => {
-        return target && target.length >= limit ? true : false;
+        return !target || target && target.length <= limit ? true : false;
     },
     'string': (target, limit) => {
-        return target && target.length >= limit ? true : false;
+        return !target || target && target.length <= limit ? true : false;
     },
     'number': (target, limit) => {
         if (typeof target === 'number') {
-            return target >= limit;
+            return target <= limit;
         }
         if (typeof target === 'string') {
-            return isNaN(target) ? false : target >= limit;
+            return target === '' || target.trim() === '' || isNaN(target) ? false : target <= limit;
         }
         if (target && (target).valueOf) {
-            return (target).valueOf() >= limit;
+            return (target).valueOf() <= limit;
         }
         return false;
     }
 };
 
-export default class Min extends Rule {
+export default class Max extends Rule {
     constructor() {
-        super('min', function (value, options) {
+        super('max', function (value, options) {
             let store = getItem(this.typeIns.id);
             return (defaultHandler[store.spec.type] || defaultHandler['any'])(value, options.value, options)
-        }, defaultOptions.rules.min)
+        }, defaultOptions.rules.max)
     }
 
     mount(typeIns, mountOptions) {

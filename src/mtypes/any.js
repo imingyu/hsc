@@ -1,5 +1,5 @@
 import { setItem, getItem } from '../store.js';
-import { mountRule, validate, registerRule } from './helper.js';
+import { mountRule, validate, registerRule, mergeTypes } from './helper.js';
 import { uniqueID } from '../util.js'
 
 class MAny {
@@ -11,10 +11,9 @@ class MAny {
                 name: '',
                 type: 'any',
                 label: '',
-                async: false,// 是否是异步方式验证
-                rules: {}
+                async: false// 是否是异步方式验证
             },
-            rules: {}
+            rules: {}//保存rule实例
         };
         setItem(this.id, DATA); // 私有变量，保护功能
     }
@@ -26,12 +25,12 @@ class MAny {
         getItem(this.id).spec.label = val;
         return this;
     }
-    message(val) {
-        getItem(this.id).spec.message = val;
-        return this;
+    merge(...types) {
+        //合并类型：后面传递的的配置项的值会覆盖签名相同配置项的值
+        mergeTypes.apply(null, [this, ...types]);
     }
     validate(...args) {
-        return validate.apply(null, [this, ...args])
+        return validate.apply(null, [this, ...args]);
     }
 }
 

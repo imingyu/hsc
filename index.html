@@ -11,10 +11,16 @@
 <body>
     <script src="./dist/index.js"></script>
     <script>
-        // const ma = mschema.any().required().async();
-        // ma.validate('', result => {
-        //     console.log(`async.result`, result)
-        // })
+        // console.log(mschema.number().required().min(1).max(5).validate(''));
+        // console.log(mschema.string().required().min(1).max(5).validate('2'));
+        // console.log(mschema.object().required().validate('2'));
+        console.log(mschema.object().required().keys({
+            name: mschema.string().required(),
+            age: mschema.number().required()
+        }).validate({
+            name: 'Tom',
+            age: 20
+        }));
     </script>
 </body>
 

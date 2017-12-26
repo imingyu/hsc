@@ -14,7 +14,7 @@ var defaultHandler = {
         return typeof val === 'boolean';
     },
     'object': val => {
-        return typeof val === 'object' && val !== null && !isEmptyObject(obj);
+        return typeof val === 'object' && val !== null && !isEmptyObject(val);
     },
     'array': val => {
         return Array.isArray(val) && val.length > 0;

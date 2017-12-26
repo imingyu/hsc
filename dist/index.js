@@ -124,7 +124,7 @@ var uniqueID = function uniqueID() {
 var isObject = function isObject(obj) {
     return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
 };
-var isFunction = function isFunction(obj) {
+var isFunction$1 = function isFunction(obj) {
     return typeof obj === 'function' || obj instanceof Function;
 };
 var isEmptyObject = function isEmptyObject(obj) {
@@ -244,6 +244,23 @@ var options = {
             value: true,
             trimString: true,
             message: '此项{ruleLabel}'
+        },
+        max: {
+            label: '最大值',
+            message: {
+                any: '{ruleLabel}为{ruleValue}',
+                string: '长度{ruleLabel}为{ruleValue}'
+            }
+        },
+        min: {
+            label: '最小值',
+            message: {
+                any: '{ruleLabel}为{ruleValue}',
+                string: '长度{ruleLabel}为{ruleValue}'
+            }
+        },
+        isType: {
+            message: '值类型必须为{ruleValue}'
         }
     }
 };
@@ -252,11 +269,11 @@ var getValidResult = function getValidResult(validResult, message, computedOptio
     if (typeof validResult === 'boolean') {
         return {
             valid: validResult,
-            message: message,
+            message: !validResult ? message : '',
             options: computedOptions
         };
     } else if ((typeof validResult === 'undefined' ? 'undefined' : _typeof(validResult)) === 'object') {
-        validResult.message = validResult.message || message;
+        validResult.message = validResult.message || (!validResult.valid ? message : '');
         validResult.options = computedOptions;
         return validResult;
     } else {
@@ -276,16 +293,16 @@ var Rule = function () {
 
     createClass(Rule, [{
         key: 'mount',
-        value: function mount(typeIns) {
+        value: function mount(typeIns, mountOptions) {
             this.typeIns = typeIns;
+            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+                extend(true, this.mountedOptions, mountOptions);
+            }
             var store = getItem(typeIns.id);
             if (this.options.async) {
                 store.spec.async = true;
             }
-            if (!store.spec.rules[this.name]) {
-                store.spec.rules[this.name] = true;
-                store.rules[this.name] = this;
-            }
+            store.rules[this.name] = this;
         }
     }, {
         key: 'validate',
@@ -299,17 +316,23 @@ var Rule = function () {
                 label: store.spec.label,
                 type: store.spec.type,
                 ruleName: this.name,
+                ruleValue: this.mountedOptions.value,
                 ruleLabel: computedOptions.label
             };
-            if (typeof message === 'function') {
-                message = message(messageValues);
+            if (isObject(message)) {
+                message = message[store.spec.type] ? message[store.spec.type] : message['any'];
             }
-            message = message ? formatString(message + '', messageValues) : '';
+            if (isFunction$1(message)) {
+                message = message(messageValues);
+            } else if (typeof message === 'string') {
+                message = formatString(message + '', messageValues);
+            }
+            message = message ? message : '';
 
             if (this.options.async) {
                 this.handler.call(this, value, computedOptions, function (validResult) {
                     var result = getValidResult(validResult, message, computedOptions);
-                    if (isFunction(callback)) {
+                    if (isFunction$1(callback)) {
                         callback(result);
                     }
                 });
@@ -341,7 +364,7 @@ var defaultHandler = {
         return typeof val === 'boolean';
     },
     'object': function object(val) {
-        return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object' && val !== null && !isEmptyObject(obj);
+        return (typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object' && val !== null && !isEmptyObject(val);
     },
     'array': function array(val) {
         return Array.isArray(val) && val.length > 0;
@@ -415,6 +438,17 @@ var IsType = function (_Rule) {
         }, options.rules.isType));
     }
 
+    createClass(IsType, [{
+        key: 'mount',
+        value: function mount(typeIns, mountOptions) {
+            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+                extend(true, this.mountedOptions, mountOptions);
+            } else {
+                this.mountedOptions.value = mountOptions;
+            }
+            get(IsType.prototype.__proto__ || Object.getPrototypeOf(IsType.prototype), 'mount', this).call(this, typeIns);
+        }
+    }]);
     return IsType;
 }(Rule);
 
@@ -424,7 +458,6 @@ var AsyncRule = function (_Rule) {
     function AsyncRule() {
         classCallCheck(this, AsyncRule);
         return possibleConstructorReturn(this, (AsyncRule.__proto__ || Object.getPrototypeOf(AsyncRule)).call(this, 'async', function (value, options$$1, callback) {
-            console.log('start AsyncRule');
             setTimeout(function () {
                 callback(true);
             }, 3 * 1000);
@@ -441,10 +474,10 @@ var defaultHandler$2 = {
         return true;
     },
     'array': function array(target, limit) {
-        return !limit ? true : target && target.length >= limit;
+        return target && target.length >= limit ? true : false;
     },
     'string': function string(target, limit) {
-        return !limit ? true : target && target.length >= limit;
+        return target && target.length >= limit ? true : false;
     },
     'number': function number(target, limit) {
         if (typeof target === 'number') {
@@ -460,18 +493,18 @@ var defaultHandler$2 = {
     }
 };
 
-var IsType$2 = function (_Rule) {
-    inherits(IsType, _Rule);
+var Min = function (_Rule) {
+    inherits(Min, _Rule);
 
-    function IsType() {
-        classCallCheck(this, IsType);
-        return possibleConstructorReturn(this, (IsType.__proto__ || Object.getPrototypeOf(IsType)).call(this, 'min', function (value, options$$1) {
+    function Min() {
+        classCallCheck(this, Min);
+        return possibleConstructorReturn(this, (Min.__proto__ || Object.getPrototypeOf(Min)).call(this, 'min', function (value, options$$1) {
             var store = getItem(this.typeIns.id);
             return (defaultHandler$2[store.spec.type] || defaultHandler$2['any'])(value, options$$1.value, options$$1);
         }, options.rules.min));
     }
 
-    createClass(IsType, [{
+    createClass(Min, [{
         key: 'mount',
         value: function mount(typeIns, mountOptions) {
             this.mountedOptions = this.mountedOptions || {};
@@ -480,17 +513,68 @@ var IsType$2 = function (_Rule) {
             } else if (typeof mountOptions === 'number') {
                 this.mountedOptions.value = mountOptions;
             }
-            get(IsType.prototype.__proto__ || Object.getPrototypeOf(IsType.prototype), 'mount', this).call(this, typeIns);
+            get(Min.prototype.__proto__ || Object.getPrototypeOf(Min.prototype), 'mount', this).call(this, typeIns);
         }
     }]);
-    return IsType;
+    return Min;
+}(Rule);
+
+var defaultHandler$3 = {
+    'any': function any(target, limit) {
+        return true;
+    },
+    'array': function array(target, limit) {
+        return !target || target && target.length <= limit ? true : false;
+    },
+    'string': function string(target, limit) {
+        return !target || target && target.length <= limit ? true : false;
+    },
+    'number': function number(target, limit) {
+        if (typeof target === 'number') {
+            return target <= limit;
+        }
+        if (typeof target === 'string') {
+            return target === '' || target.trim() === '' || isNaN(target) ? false : target <= limit;
+        }
+        if (target && target.valueOf) {
+            return target.valueOf() <= limit;
+        }
+        return false;
+    }
+};
+
+var Max = function (_Rule) {
+    inherits(Max, _Rule);
+
+    function Max() {
+        classCallCheck(this, Max);
+        return possibleConstructorReturn(this, (Max.__proto__ || Object.getPrototypeOf(Max)).call(this, 'max', function (value, options$$1) {
+            var store = getItem(this.typeIns.id);
+            return (defaultHandler$3[store.spec.type] || defaultHandler$3['any'])(value, options$$1.value, options$$1);
+        }, options.rules.max));
+    }
+
+    createClass(Max, [{
+        key: 'mount',
+        value: function mount(typeIns, mountOptions) {
+            this.mountedOptions = this.mountedOptions || {};
+            if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+                extend(true, this.mountedOptions, mountOptions);
+            } else if (typeof mountOptions === 'number') {
+                this.mountedOptions.value = mountOptions;
+            }
+            get(Max.prototype.__proto__ || Object.getPrototypeOf(Max.prototype), 'mount', this).call(this, typeIns);
+        }
+    }]);
+    return Max;
 }(Rule);
 
 var Rules = {
     required: Required,
     isType: IsType,
     'async': AsyncRule,
-    min: IsType$2
+    min: Min,
+    max: Max
 };
 
 var registerRule = function registerRule(mtype, rules) {
@@ -544,7 +628,7 @@ var validate = function validate(typeIns, value, callback) {
         var checkIsEnd = function checkIsEnd() {
             execSize++;
             if (execSize >= asyncRules.length) {
-                if (isFunction(callback)) {
+                if (isFunction$1(callback)) {
                     callback(result);
                 }
             }
@@ -565,15 +649,25 @@ var validateSync = function validateSync(typeIns, value) {
     var store = getItem(typeIns.id);
     var result = {
         valid: true,
+        name: store.spec.name,
         label: store.spec.label,
-        rules: {},
-        message: store.spec.message
+        rules: {}
     };
     Object.keys(store.rules).forEach(function (name) {
         var rule = store.rules[name];
         result.rules[name] = rule.validate(value);
         result.valid = result.valid && result.rules[name].valid;
     });
+    return result;
+};
+
+var mergeTypes = function mergeTypes() {
+    for (var _len2 = arguments.length, types = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        types[_key2] = arguments[_key2];
+    }
+
+    var result;
+    types.forEach(function (type) {});
     return result;
 };
 
@@ -588,10 +682,9 @@ var MAny = function () {
                 name: '',
                 type: 'any',
                 label: '',
-                async: false, // 是否是异步方式验证
-                rules: {}
+                async: false // 是否是异步方式验证
             },
-            rules: {}
+            rules: {} //保存rule实例
         };
         setItem(this.id, DATA); // 私有变量，保护功能
     }
@@ -609,16 +702,20 @@ var MAny = function () {
             return this;
         }
     }, {
-        key: 'message',
-        value: function message(val) {
-            getItem(this.id).spec.message = val;
-            return this;
+        key: 'merge',
+        value: function merge() {
+            for (var _len = arguments.length, types = Array(_len), _key = 0; _key < _len; _key++) {
+                types[_key] = arguments[_key];
+            }
+
+            //合并类型：后面传递的的配置项的值会覆盖签名相同配置项的值
+            mergeTypes.apply(null, [this].concat(types));
         }
     }, {
         key: 'validate',
         value: function validate$$1() {
-            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-                args[_key] = arguments[_key];
+            for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+                args[_key2] = arguments[_key2];
             }
 
             return validate.apply(null, [this].concat(args));
@@ -646,9 +743,114 @@ var MNumber = function (_MAny) {
 
 registerRule(MNumber, ['min', 'max']);
 
+var MString = function (_MAny) {
+    inherits(MString, _MAny);
+
+    function MString() {
+        classCallCheck(this, MString);
+
+        var _this = possibleConstructorReturn(this, (MString.__proto__ || Object.getPrototypeOf(MString)).call(this));
+
+        changeType(_this, 'string');
+        return _this;
+    }
+
+    return MString;
+}(MAny);
+
+registerRule(MString, ['min', 'max']);
+
+var MKeys = function (_MAny) {
+    inherits(MKeys, _MAny);
+
+    function MKeys() {
+        classCallCheck(this, MKeys);
+
+        var _this = possibleConstructorReturn(this, (MKeys.__proto__ || Object.getPrototypeOf(MKeys)).call(this));
+
+        changeType(_this, 'object');
+        return _this;
+    }
+
+    createClass(MKeys, [{
+        key: 'keys',
+        value: function keys(obj) {
+            var store = getItem(this.id);
+            store.keys = store.keys || {}; //保存key实例，每个key实例其实就是一个MAny的子类实例
+            for (var prop in obj) {
+                if (obj[prop] instanceof MAny) {
+                    if (store.keys[prop]) {
+                        store.keys[prop].merge(obj[prop]);
+                    } else {
+                        store.keys[prop] = obj[prop];
+                    }
+                    var item = store.keys[prop];
+                    store.spec.async = getItem(item.id).spec.async; //同步异步性
+                }
+            }
+            return this;
+        }
+    }, {
+        key: 'validate',
+        value: function validate$$1(value, callback) {
+            var store = getItem(this.id);
+            if (store.spec.async) {
+                validate(this, value, function (validResult) {
+                    validResult.keys = {};
+
+                    var keyTypes = Object.keys(store.keys).map(function (item) {
+                        return store.keys[item];
+                    });
+
+                    var execSize = 0;
+                    var checkIsEnd = function checkIsEnd() {
+                        execSize++;
+                        if (execSize >= keyTypes.length) {
+                            if (isFunction(callback)) {
+                                callback(validResult);
+                            }
+                        }
+                    };
+                    keyTypes.forEach(function (item) {
+                        item.validate(value[key], function (result) {
+                            validResult.keys[key] = result;
+                            validResult.valid = validResult.valid && validResult.keys[key].valid;
+                            checkIsEnd();
+                        });
+                    });
+                });
+            } else {
+                var validResult = validate(this, value);
+                validResult.keys = {};
+                for (var _key in store.keys) {
+                    validResult.keys[_key] = store.keys[_key].validate(value[_key]);
+                    validResult.valid = validResult.valid && validResult.keys[_key].valid;
+                }
+                return validResult;
+            }
+        }
+    }]);
+    return MKeys;
+}(MAny);
+
+registerRule(MKeys, []);
+
+var MObject = function (_MKeys) {
+    inherits(MObject, _MKeys);
+
+    function MObject() {
+        classCallCheck(this, MObject);
+        return possibleConstructorReturn(this, (MObject.__proto__ || Object.getPrototypeOf(MObject)).call(this));
+    }
+
+    return MObject;
+}(MKeys);
+
 var MType = {
     any: MAny,
-    number: MNumber
+    number: MNumber,
+    string: MString,
+    object: MObject
 };
 
 var version = "0.1.0";

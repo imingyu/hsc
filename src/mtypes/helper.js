@@ -71,14 +71,21 @@ export var validateSync = (typeIns, value) => {
     var store = getItem(typeIns.id)
     var result = {
         valid: true,
+        name: store.spec.name,
         label: store.spec.label,
-        rules: {},
-        message: store.spec.message
+        rules: {}
     }
     Object.keys(store.rules).forEach(name => {
         let rule = store.rules[name]
         result.rules[name] = rule.validate(value);
         result.valid = result.valid && result.rules[name].valid;
+    });
+    return result;
+}
+
+export var mergeTypes = (...types) => {
+    var result;
+    types.forEach(type => {
     });
     return result;
 }

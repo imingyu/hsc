@@ -1,15 +1,15 @@
 import { getItem } from '../store.js';
-import { extend, formatString, isFunction } from '../util.js';
+import { extend, formatString, isFunction, isObject, isEmptyObject } from '../util.js';
 
 var getValidResult = (validResult, message, computedOptions) => {
     if (typeof validResult === 'boolean') {
         return {
             valid: validResult,
-            message: message,
+            message: !validResult ? message : '',
             options: computedOptions
         }
     } else if (typeof validResult === 'object') {
-        validResult.message = validResult.message || message;
+        validResult.message = validResult.message || (!validResult.valid ? message : '');
         validResult.options = computedOptions;
         return validResult;
     } else {
@@ -25,16 +25,16 @@ export default class Rule {
         this.mountedOptions = {}
     }
 
-    mount(typeIns) {
+    mount(typeIns, mountOptions) {
         this.typeIns = typeIns;
+        if (isObject(mountOptions) && !isEmptyObject(mountOptions)) {
+            extend(true, this.mountedOptions, mountOptions);
+        }
         let store = getItem(typeIns.id);
         if (this.options.async) {
             store.spec.async = true;
         }
-        if (!store.spec.rules[this.name]) {
-            store.spec.rules[this.name] = true;
-            store.rules[this.name] = this;
-        }
+        store.rules[this.name] = this;
     }
 
     validate(value, callback) {
@@ -47,12 +47,18 @@ export default class Rule {
             label: store.spec.label,
             type: store.spec.type,
             ruleName: this.name,
+            ruleValue: this.mountedOptions.value,
             ruleLabel: computedOptions.label
         }
-        if (typeof message === 'function') {
-            message = message(messageValues)
+        if (isObject(message)) {
+            message = message[store.spec.type] ? message[store.spec.type] : message['any'];
         }
-        message = message ? formatString(message + '', messageValues) : '';
+        if (isFunction(message)) {
+            message = message(messageValues);
+        } else if (typeof message === 'string') {
+            message = formatString(message + '', messageValues);
+        }
+        message = message ? message : '';
 
         if (this.options.async) {
             this.handler.call(this, value, computedOptions, (validResult) => {
