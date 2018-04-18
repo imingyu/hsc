@@ -24,6 +24,22 @@ class MKeys extends MAny {
         }
         return this;
     }
+    key(name, value) {
+        var store = getItem(this.id);
+        var item = store.keys[name];
+        if (value) {
+            item.merge(value);
+            return this;
+        } else {
+            return item;
+        }
+    }
+    validateKey(key, value, callback) {
+        var item = this.key(key);
+        if (item) {
+            return item.validate(value, callback);
+        }
+    }
     validate(value, callback) {
         var store = getItem(this.id);
         if (store.spec.async) {

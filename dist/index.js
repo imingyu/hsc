@@ -845,6 +845,26 @@ var MKeys = function (_MAny) {
             return this;
         }
     }, {
+        key: 'key',
+        value: function key(name, value) {
+            var store = getItem(this.id);
+            var item = store.keys[name];
+            if (value) {
+                item.merge(value);
+                return this;
+            } else {
+                return item;
+            }
+        }
+    }, {
+        key: 'validateKey',
+        value: function validateKey(key, value, callback) {
+            var item = this.key(key);
+            if (item) {
+                return item.validate(value, callback);
+            }
+        }
+    }, {
         key: 'validate',
         value: function validate$$1(value, callback) {
             var store = getItem(this.id);

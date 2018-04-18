@@ -18,11 +18,12 @@
             name: mschema.string().required(),
             age: mschema.number().required(),
             email: mschema.string().email()
-        }).validate({
-            name: 'Tom',
-            age: 20,
-            email: '123@163.com'
-        });
+        })
+        // .validate({
+        //     name: 'Tom',
+        //     age: 20,
+        //     email: '123@163.com'
+        // });
         console.log(`result=>`, result);
     </script>
 </body>
